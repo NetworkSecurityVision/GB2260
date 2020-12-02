@@ -4,7 +4,13 @@ import json
 import os
 
 
-data = {}
+data = {
+    "0": {
+        "name": "中国",
+        "location": {"lat": 39.904989, "lng": 116.405285, "type": "GCJ02"},
+        "children": [],
+    }
+}
 
 DB_PATH = "../data/2020/fuzzy.db"
 DATA_PATH = "../data/2020/data.json"
@@ -15,6 +21,7 @@ def read_provinces():
         reader = csv.DictReader(f)
         for row in reader:
             data[row["code"]] = {"name": row["name"], "children": []}
+            data["0"]["children"].append(row["code"])
 
 
 def read_cities():
@@ -94,11 +101,13 @@ create virtual table divisions using fts4(code, pinyin, name)
     conn.commit()
 
     for (k, v) in data.items():
+        name = " ".join(list(v["name"]))
+        pinyin = " ".join(list("".join(v["pinyin"].split(" ")))) if v.get('pinyin') else ''
         cursor.execute(
             """
         insert into divisions (code, pinyin, name) values ('%s', '%s', '%s')
         """
-            % (k, v.get("pinyin"), v["name"])
+            % (k, pinyin, name)
         )
 
     # 优化 fts4 索引
@@ -106,14 +115,14 @@ create virtual table divisions using fts4(code, pinyin, name)
     conn.commit()
 
 
-# read_provinces()
-# read_cities()
-# read_areas()
-# read_streets()
-# read_geo()
+read_provinces()
+read_cities()
+read_areas()
+read_streets()
+read_geo()
 
-# dumpf = open(DATA_PATH, "w")
-# json.dump(data, dumpf, ensure_ascii=False, indent=True)
+dumpf = open(DATA_PATH, "w")
+json.dump(data, dumpf, ensure_ascii=False, indent=True)
 
-# read_pinyin()
+read_pinyin()
 create_fuzzy_db()

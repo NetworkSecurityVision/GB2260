@@ -3,9 +3,119 @@
 <head>
     <title>Demo</title>
     <meta charset="utf-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <link
+        rel="stylesheet"
+        href="/static/bootstrap.min.css"
+    />
 </head>
 
 <body>
-    <input id="keyword" value="" placeholder="请输入关键字" />
+    <br />
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div>
+                    <h4>
+                        &nbsp; &nbsp; &nbsp; 动态加载中国行政区划
 
+                        <button class="btn btn-link" onclick="reset()">
+                            重置
+                        </button>
+                    </h4>
+                </div>
+                <ul id="list" class="list-style" onclick="load(this)">
+                    <li data-code="0">中国</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="keyword"
+                        >搜索关键字
+                        <span id="time">0.00 ms</span>
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="keyword"
+                        placeholder="地区编号、拼音、名字"
+                        oninput="fuzzy(this.value)"
+                    />
+                </div>
+                <table class="table" id="table"></table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fuzzy(v) {
+            fetch("/china/division/2020/fuzzy?pinyin=true&k=" + v)
+                .then((res) => {
+                    document.getElementById("time").innerText =
+                        parseFloat(
+                            res.headers.get("X-Time-Used") * 1000
+                        ).toFixed(2) + " ms";
+                    return res.json();
+                })
+                .then((data) => {
+                    if (data.err) return;
+
+                    let rows = data.map((i) => {
+                        return `
+                                <tr>
+                                    <th>${i.code}</th>
+                                    <th>${i.pinyin}</th>
+                                    <th>${i.fullpath}</th>
+                                </tr>
+                                `;
+                    });
+                    document.getElementById("table").innerHTML = `
+                            <tr>
+                                <th>编码</th>
+                                <th>拼音</th>
+                                <th>地区</th>
+                            </tr>
+                            ${rows.join("")}
+                            `;
+                });
+        }
+        function getAreas(code) {
+            return fetch("/china/division/2020/" + code + "?children=true")
+                .then((r) => r.json())
+                .then((r) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => resolve(r), 500);
+                    });
+                });
+        }
+        function reset() {
+            document.getElementById("list").innerHTML = listItem(0, "中国");
+        }
+        function listItem(code, name) {
+            return `<li data-code="${code}">${name}</li>`;
+        }
+        function load(element) {
+            let target = event.target;
+            let code = target.getAttribute("data-code"),
+                loaded = target.getAttribute("data-loaded");
+
+            if (!code) return;
+            if (loaded) return;
+
+            let targetName = target.innerText;
+            target.innerText = "loading...";
+
+            getAreas(code).then((d) => {
+                target.setAttribute("data-loaded", "true");
+                if (d.children.length == 0) return;
+
+                let lis = d.children.map((i) => listItem(i.code, i.name));
+                let html = `${targetName} <br /> <ul> ${lis.join("")} </ul> `;
+                target.innerHTML = html;
+            });
+        }
+    </script>
 </body>

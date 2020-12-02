@@ -56,7 +56,12 @@ python3 app.py
 
 #### 行政地区详情
 
-    GET /china/division/:id?withChildren
+    GET /china/division/:code
+
+参数
+
+-   children，返回结果中是否包含子区域
+-   location，返回结果中是否包含当前区域坐标（区域本身也可能不存在坐标）
 
 返回数据
 
@@ -65,7 +70,7 @@ python3 app.py
     "code": 1000,
     "name": "海淀区",
     "fullpath": ["北京市", "北京", "海淀区"],
-    "WGS84": {
+    "GCJ02": {
         "latitide": 0,
         "longitude": 0
     },
