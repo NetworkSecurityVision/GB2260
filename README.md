@@ -29,6 +29,14 @@ docker run -p 5911:5911 delongw/gb2260
 
 然后使用浏览器访问 http://localhost:5911/static/demo.html
 
+区域浏览（懒加载）
+
+![s](./assets/tree.gif)
+
+模糊搜索，编号、名字、拼音
+
+![s](./assets/fuzzy.gif)
+
 ## 生成数据
 
 查看 /datasource/README.md
