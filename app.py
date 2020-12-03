@@ -26,26 +26,43 @@ class DataSource:
     def _fullpath(self, code):
         if code == "0":
             return "中国"
-        cl = len(code)
-        if cl >= 2:
-            path = [code[:2]]
-        if cl >= 4:
-            path.append(code[:4])
-        if cl >= 6:
-            path.append(code[:6])
-        if cl > 6:
-            path.append(code)
 
-        def f_name(code):
+        def g(code):
             return self.data2020[code]["name"]
 
-        return " ".join(list(map(f_name, path)))
+        cl = len(code)
+        path = []
+
+        if cl >= 2:
+            path.append(g(code[:2]))
+        if cl >= 4:
+            n = g(code[:4])
+            if n != path[-1]:
+                path.append(n)
+        if cl >= 6:
+            n = g(code[:6])
+            if n != path[-1]:
+                path.append(n)
+        if cl > 6:
+            n = g(code)
+            if n != path[-1]:
+                path.append(n)
+
+        return " ".join(path)
 
     def _get_children(self, code):
-        def f_name_code(code):
-            return {"code": code, "name": self.data2020[code]["name"]}
+        children = self.data2020[code].get("children")
+        if children is None:
+            return []
 
-        return list(map(f_name_code, self.data2020[code]["children"]))
+        r = []
+        for code in children:
+            child = self.data2020[code]
+            if child.get("is_direct"):
+                r.extend(self._get_children(code))
+            else:
+                r.append({"code": code, "name": child["name"]})
+        return r
 
     def areas(self, code, with_children, with_location):
 
@@ -77,6 +94,8 @@ class DataSource:
                 % (k, count)
             )
         else:
+            # SQL 转义
+            k = k.replace("'", "")
             rows = self.cursor2020.execute(
                 'select code, pinyin from divisions where divisions match "%s" limit %s'
                 % (list(k.replace(" ", "")), count)
@@ -85,7 +104,11 @@ class DataSource:
         def f_fill(row):
             code = row[0]
             pinyin = row[1]
-            r = {"code": code, "fullpath": self._fullpath(code)}
+            r = {
+                "code": code,
+                "name": self.data2020[code]["name"],
+                "fullpath": self._fullpath(code),
+            }
             if with_pinyin:
                 r["pinyin"] = "".join(pinyin.split(" "))
             return r
@@ -119,9 +142,19 @@ async def fuzzy(request, year):
     start = time.time()
     k = request.args.get("k")
     with_pinyin = request.args.get("pinyin") == "true"
+    size = request.args.get("size")
+
     if not k:
         return json({"err": "parameter k must signed"})
-    r = Source.fuzzy(k, with_pinyin=with_pinyin)
+
+    if size is None:
+        size = 5
+    elif size.isnumeric():
+        size = int(size)
+    else:
+        return json({"err": "parameter size must be number or empty"})
+
+    r = Source.fuzzy(k, with_pinyin=with_pinyin, count=size)
     return json(r, headers={"X-Time-Used": time.time() - start})
 
 
@@ -160,4 +193,4 @@ app.blueprint(bp)
 port = os.getenv("PORT") or 5911
 debug = os.getenv("DEBUG") == "true"
 
-app.run(host="0.0.0.0", port=int(port), debug=True, workers=1, access_log=True)
+app.run(host="0.0.0.0", port=int(port), debug=debug, workers=1, access_log=True)

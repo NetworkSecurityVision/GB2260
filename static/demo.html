@@ -7,10 +7,12 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <link
-        rel="stylesheet"
-        href="/static/bootstrap.min.css"
-    />
+    <link rel="stylesheet" href="/static/bootstrap.min.css" />
+    <style>
+        .pinyin {
+            color: lightgray;
+        }
+    </style>
 </head>
 
 <body>
@@ -21,7 +23,6 @@
                 <div>
                     <h4>
                         &nbsp; &nbsp; &nbsp; 动态加载中国行政区划
-
                         <button class="btn btn-link" onclick="reset()">
                             重置
                         </button>
@@ -66,17 +67,17 @@
                     let rows = data.map((i) => {
                         return `
                                 <tr>
-                                    <th>${i.code}</th>
-                                    <th>${i.pinyin}</th>
-                                    <th>${i.fullpath}</th>
+                                    <td>${i.code}</td>
+                                    <td>${i.fullpath}</td>
+                                    <td class="pinyin">${i.pinyin}</td>
                                 </tr>
                                 `;
                     });
                     document.getElementById("table").innerHTML = `
                             <tr>
                                 <th>编码</th>
-                                <th>拼音</th>
                                 <th>地区</th>
+                                <th class="pinyin">拼音</th>
                             </tr>
                             ${rows.join("")}
                             `;
@@ -110,7 +111,10 @@
 
             getAreas(code).then((d) => {
                 target.setAttribute("data-loaded", "true");
-                if (d.children.length == 0) return;
+                if (d.children.length == 0) {
+                    target.innerText = targetName + " (完)";
+                    return;
+                }
 
                 let lis = d.children.map((i) => listItem(i.code, i.name));
                 let html = `${targetName} <br /> <ul> ${lis.join("")} </ul> `;

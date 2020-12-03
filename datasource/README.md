@@ -20,4 +20,14 @@
 
 执行 Python 脚本
 
-    python generate.cli.py
+    python3 generate.cli.py
+
+## 数据处理
+
+注意一下问题：
+
+-   直辖区
+
+直辖区包含两类：“直辖市” 和 “市辖区”
+
+-   港澳台地区
